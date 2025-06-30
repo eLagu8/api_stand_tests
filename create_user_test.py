@@ -1,118 +1,122 @@
 import sender_stand_request
 import data
 
-# Función para cambiar el valor del parámetro firstName en el cuerpo de la solicitud
+# Function to change the value of the firstName parameter in the request body
 def get_user_body(first_name):
-    # Copiar el diccionario con el cuerpo de la solicitud desde el archivo de datos
+    # Copy the request body dictionary from the data file
     current_body = data.user_body.copy()
-    # Se cambia el valor del parámetro firstName
+    # Change the value of the firstName parameter
     current_body["firstName"] = first_name
-    # Se devuelve un nuevo diccionario con el valor firstName requerido
+    # Return the new dictionary with the required firstName value
     return current_body
 
-# Función de prueba positiva
+# Positive test function
 def positive_assert(first_name):
-    # El cuerpo actualizado de la solicitud se guarda en la variable user_body
+    # The updated request body is stored in the user_body variable
     user_body = get_user_body(first_name)
-    # El resultado de la solicitud para crear un nuevo usuario o usuaria se guarda en la variable response
+    # The result of the request to create a new user is stored in the user_response variable
     user_response = sender_stand_request.post_new_user(user_body)
 
-    # Comprueba si el código de estado es 201
+    # Check if the status code is 201
     assert user_response.status_code == 201
-    # Comprueba que el campo authToken está en la respuesta y contiene un valor
+    # Check that the authToken field is in the response and contains a value
     assert user_response.json()["authToken"] != ""
 
-    # Comprobar que el resultado de la solicitud se guarda en users_table_response
+    # Check that the result of the request is stored in users_table_response
     users_table_response = sender_stand_request.get_users_table()
 
-    # String que debe estar en el cuerpo de respuesta
+    # String that should appear in the response body
     str_user = user_body["firstName"] + "," + user_body["phone"] + "," \
                + user_body["address"] + ",,," + user_response.json()["authToken"]
 
-    # Comprueba si el usuario o usuaria existe y es único/a
+    # Check whether the user exists and is unique
     assert users_table_response.text.count(str_user) == 1
 
-# Función de prueba negativa para los casos en los que la solicitud devuelve un error relacionado con caracteres
+# Negative test function for cases where the request fails due to invalid characters
 def negative_assert_symbol(first_name):
-    # El cuerpo actualizado de la solicitud se guarda en la variable user_body
+    # The updated request body is stored in the user_body variable
     user_body = get_user_body(first_name)
 
-    # El resultado se guarda en la variable response
+    # The result is stored in the response variable
     response = sender_stand_request.post_new_user(user_body)
 
-    # Comprueba si el código de estado es 400
+    # Check if the status code is 400
     assert response.status_code == 400
 
-    # Comprueba que el atributo code en el cuerpo de respuesta es 400
+    # Check that the code attribute in the response body is 400
     assert response.json()["code"] == 400
-    # Comprueba el atributo message en el cuerpo de respuesta
-    assert response.json()["message"] == "El nombre que ingresaste es incorrecto. " \
-                                         "Los nombres solo pueden contener caracteres latinos,  "\
-                                         "los nombres deben tener al menos 2 caracteres y no más de 15 caracteres"
+    # Check the message attribute in the response body
+    assert response.json()["message"] == "Has introducido un nombre de usuario no válido. " \
+                                         "El nombre solo puede contener letras del alfabeto latino, " \
+                                         "la longitud debe ser de 2 a 15 caracteres."
 
-# Función de prueba negativa cuando el error es "No se enviaron todos los parámetros requeridos"
+# Negative test function when the error is "Not all required parameters were sent"
 def negative_assert_no_firstname(user_body):
-    # El resultado se guarda en la variable response
+    # The result is stored in the response variable
     response = sender_stand_request.post_new_user(user_body)
 
-    # Comprueba si el código de estado es 400
+    # Check if the status code is 400
     assert response.status_code == 400
 
-    # Comprueba que el atributo code en el cuerpo de respuesta es 400
+    # Check that the code attribute in the response body is 400
     assert response.json()["code"] == 400
-    # Comprueba el atributo message en el cuerpo de respuesta
-    assert response.json()["message"] == "No se enviaron todos los parámetros requeridos"
+    # Check the message attribute in the response body
+    assert response.json()["message"] == "No se han aprobado todos los parámetros requeridos"
 
-# Prueba 1. Usuario o usuaria creada con éxito. El parámetro firstName contiene 2 caracteres
+# Test 1. User created successfully. The firstName parameter contains 2 characters
 def test_create_user_2_letter_in_first_name_get_success_response():
     positive_assert("Aa")
 
-# Prueba 2. Usuario o usuaria creada con éxito. El parámetro firstName contiene 15 caracteres
+# Test 2. User created successfully. The firstName parameter contains 15 characters
 def test_create_user_15_letter_in_first_name_get_success_response():
     positive_assert("Aaaaaaaaaaaaaaa")
 
-# Prueba 3. Error. El parámetro firstName contiene 1 carácter
+# Test 3. Error. The firstName parameter contains 1 character
 def test_create_user_1_letter_in_first_name_get_error_response():
     negative_assert_symbol("A")
 
-# Prueba 4. Error. El parámetro firstName contiene 16 caracteres
+# Test 4. Error. The firstName parameter contains 16 characters
 def test_create_user_16_letter_in_first_name_get_error_response():
     negative_assert_symbol("Aaaaaaaaaaaaaaaa")
 
-# Prueba 5. Usuario o usuaria creada con éxito. El parámetro firstName contiene caracteres latinos
+# Test 5. User created successfully. The firstName parameter contains Latin letters
 def test_create_user_english_letter_in_first_name_get_success_response():
     positive_assert("QWErty")
 
-# Prueba 6. Error. El parámetro firstName contiene un string de caracteres especiales
+# Test 6. Error. The firstName parameter contains spaces
+def test_create_user_has_space_in_first_name_get_error_response():
+    negative_assert_symbol("A Aaa")
+
+# Test 7. Error. The firstName parameter contains special characters
 def test_create_user_has_special_symbol_in_first_name_get_error_response():
     negative_assert_symbol("\"№%@\",")
 
-# Prueba 7. Error. El parámetro firstName contiene un string de dígitos
+# Test 8. Error. The firstName parameter contains digits
 def test_create_user_has_number_in_first_name_get_error_response():
     negative_assert_symbol("123")
 
-# Prueba 8. Error. Falta el parámetro firstName en la solicitud
+# Test 9. Error. The firstName
 def test_create_user_no_first_name_get_error_response():
-    # El diccionario con el cuerpo de la solicitud se copia del archivo "data" a la variable "user_body"
+    # Copy the request body dictionary from the "data" file into user_body
     user_body = data.user_body.copy()
-    # El parámetro "firstName" se elimina de la solicitud
+    # Remove the "firstName" parameter from the request
     user_body.pop("firstName")
-    # Comprueba la respuesta
+    # Validate the response
     negative_assert_no_firstname(user_body)
 
-# Prueba 9. Error. El parámetro contiene un string vacío
+# Test 10. Error. The parameter contains an empty string
 def test_create_user_empty_first_name_get_error_response():
-    # El cuerpo actualizado de la solicitud se guarda en la variable user_body
+    # The updated request body is stored in the user_body variable
     user_body = get_user_body("")
-    # Comprueba la respuesta
+    # Validate the response
     negative_assert_no_firstname(user_body)
 
-# Prueba 10. Error. El tipo del parámetro firstName: número
+# Test 11. Error. The type of the firstName parameter is a number
 def test_create_user_number_type_first_name_get_error_response():
-    # El cuerpo actualizado de la solicitud se guarda en la variable user_body
+    # The updated request body is stored in the user_body variable
     user_body = get_user_body(12)
-    # El resultado de la solicitud para crear un nuevo usuario o usuaria se guarda en la variable response
+    # The result of the request to create a new user is stored in the response variable
     response = sender_stand_request.post_new_user(user_body)
 
-    # Comprobar el código de estado de la respuesta
+    # Check the response status code
     assert response.status_code == 400
