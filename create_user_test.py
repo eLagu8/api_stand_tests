@@ -117,6 +117,5 @@ def test_create_user_number_type_first_name_get_error_response():
     user_body = get_user_body(12)
     # The result of the request to create a new user is stored in the response variable
     response = sender_stand_request.post_new_user(user_body)
-
     # Check the response status code
     assert response.status_code == 400
